@@ -1,3 +1,4 @@
 configs/config.json
 dist
 alert.dbdata/
+.DS_Store

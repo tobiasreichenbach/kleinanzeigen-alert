@@ -62,7 +62,7 @@ func GetAds(page int, term string, cityCode int, radius int, maxPrice *int, minP
 	if err != nil {
 		return ads, err
 	}
-	req.Header.Set("User-Agent", "telegram-alert-bot/1.0")
+	setBrowserHeaders(req, false)
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -177,16 +177,14 @@ func FindCityID(untrimmed string) (int, string, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(cityURL, neturl.QueryEscape(city)), nil)
-
 	if err != nil {
 		log.Error().Err(err).Msg("could not create the request")
 		return 0, "", errors.New("could not make request")
 	}
 
-	req.Header.Set("Accept", "application/json")
+	setBrowserHeaders(req, true)
 
 	res, getErr := client.Do(req)
-
 	if getErr != nil {
 		return 0, "", errors.New("could not send request")
 	}
@@ -238,4 +236,30 @@ func CheckUrl(untrimmed string) bool {
 	var urlRegex = regexp.MustCompile(`https://www.kleinanzeigen.de/s-[^? ]+`)
 
 	return urlRegex.Match([]byte(url))
+}
+
+// setBrowserHeaders sets realistic Chrome headers matching either a page navigation
+// or an XHR/fetch JSON call.
+func setBrowserHeaders(req *http.Request, isAPI bool) {
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36")
+	req.Header.Set("Sec-CH-UA", `"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"`)
+	req.Header.Set("Sec-CH-UA-Mobile", "?0")
+	req.Header.Set("Sec-CH-UA-Platform", `"Windows"`)
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7")
+	req.Header.Set("Priority", "u=0, i")
+
+	if isAPI {
+		req.Header.Set("Accept", "application/json, text/plain, */*")
+		req.Header.Set("Referer", "https://www.kleinanzeigen.de/")
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+		req.Header.Set("Sec-Fetch-Mode", "cors")
+		req.Header.Set("Sec-Fetch-Dest", "empty")
+	} else {
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+		req.Header.Set("Upgrade-Insecure-Requests", "1")
+		req.Header.Set("Sec-Fetch-Site", "none")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		req.Header.Set("Sec-Fetch-User", "?1")
+		req.Header.Set("Sec-Fetch-Dest", "document")
+	}
 }
