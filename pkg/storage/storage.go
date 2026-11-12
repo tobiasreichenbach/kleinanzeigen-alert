@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -22,13 +23,18 @@ type Storage struct {
 // NewStorage creates a new Storage
 func NewStorage() *Storage {
 	s := new(Storage)
-	db, err := gorm.Open("sqlite3", "/tmp/alert.db")
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "/tmp/alert.db"
+	}
+
+	db, err := gorm.Open("sqlite3", dbPath)
 
 	if err != nil {
 		log.Panic().Err(err).Msg("sqlite3 database could not be created")
 	}
 
-	log.Info().Msg("database was created")
+	log.Info().Str("path", dbPath).Msg("database was created")
 
 	db.AutoMigrate(&model.Query{})
 	db.AutoMigrate(&model.Ad{})

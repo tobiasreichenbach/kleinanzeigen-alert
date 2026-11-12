@@ -31,6 +31,8 @@ write `/add {search term}, {city/zip}, {radius}, {optional max price without "â‚
 e.g. `/add bicycle, Cologne, 20`
 This will perform a search every minute and you will get the latest entries here.
 
+To search all of Germany use `Deutschland` as city, e.g. `/add bicycle, Deutschland, 0`
+
 ### Search lists of everything
 write `/list`
 This will list all your current searches

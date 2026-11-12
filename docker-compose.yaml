@@ -4,4 +4,7 @@ services:
     build: .
     environment:
       - TELEGRAM_APITOKEN=myToken
+      - DB_PATH=/data/alert.db
+    volumes:
+      - ./data:/data
     restart: always
