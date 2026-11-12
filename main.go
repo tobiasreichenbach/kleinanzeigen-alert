@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -19,9 +20,24 @@ var token string
 
 var f = fmt.Sprintf
 
-const fetchDuration = time.Second * 60
+const fetchDuration = time.Second * 45
+
+// fetchJitter randomly shifts each fetch cycle by up to +/- this duration.
+const fetchJitter = time.Second * 15
+
+// pause between two consecutive queries within one cycle
+const minQueryGap = time.Second * 2
+const maxQueryGap = time.Second * 8
+
+// randomDuration returns a random duration in [min, max).
+func randomDuration(min, max time.Duration) time.Duration {
+	return min + time.Duration(rand.Int63n(int64(max-min)))
+}
 
 func main() {
+	// go.mod targets go 1.16, so math/rand is not auto-seeded
+	rand.Seed(time.Now().UnixNano())
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	debug := flag.Bool("debug", false, "sets log level to debug")
 
@@ -70,8 +86,12 @@ func main() {
 		queries := s.GetQueries()
 
 		log.Info().Int("number_of_queries", len(queries)).Msg("fetching ads")
-		for _, q := range queries {
-			go func(query model.Query) {
+		// queries run one after another with a random gap instead of all at once
+		for i, q := range queries {
+			if i > 0 {
+				time.Sleep(randomDuration(minQueryGap, maxQueryGap))
+			}
+			func(query model.Query) {
 				new, err := s.GetLatest(query.ID)
 
 				if err != nil {
@@ -106,6 +126,6 @@ func main() {
 			}(q)
 		}
 
-		time.Sleep(fetchDuration)
+		time.Sleep(randomDuration(fetchDuration-fetchJitter, fetchDuration+fetchJitter))
 	}
 }
